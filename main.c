@@ -20,20 +20,22 @@ char *read_content(char *file){
 
   fptr = fopen(file_name, "r");
   if (fptr == NULL){
-    return "NULL";
+    strcpy(content, "NULL");
+    return content;
   }
 
   while ((character = fgetc(fptr)) != EOF){
     content[position] = character;
     position++;
 
-    if (position == sizeof(content)){
+    if (position == sizeof(content)-1){ // -1 to make sure there is always room for a null byte
       content_size += file_read_size;
       content = realloc(content, content_size);
     }
   }
 
   fclose(fptr);
+  content[position+1] = '\0';
   return content;
 }
 
@@ -50,10 +52,11 @@ char *get_page(char *request){
       position++;
     }
     else{
+      line[position+1] = '\0';
       break;
     }
 
-    if (position == sizeof(line)){
+    if (position == sizeof(line)-1){ // -1 to make sure there is room for null byte
       line = realloc(line, sizeof(line)+50);
     }
   }
@@ -66,7 +69,7 @@ char *get_page(char *request){
         page[position] = line[i];
         position++;
 
-        if (position == sizeof(page)){
+        if (position == sizeof(page)-1){ // -1 to make sure there is room for null byte
           page = realloc(page, sizeof(page)+50);
         }
       }
@@ -81,6 +84,7 @@ char *get_page(char *request){
       }
     }
   }
+  free(line);
   return page;
 }
 
@@ -110,13 +114,14 @@ void handle_request(int client_socket, char *request){
     send(client_socket, response, strlen(response), 0);
   }
   
+  free(page);
+  free(content);
 }
 
 int main(int argc, char *argv[]){
   int sock, client_socket;
   struct sockaddr_in address;
   socklen_t addrlen = sizeof(address);
-  char *content;
   char request[600];
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
